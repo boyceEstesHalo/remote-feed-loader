@@ -13,17 +13,27 @@ class RemoteFeedLoader {
     func load() {
 
         // Modify the HTTPClient singleton:
-        HTTPClient.shared.requestedURL = URL(string: "https://some-api")
+        HTTPClientSpy.shared.get(from: URL(string: "https://some-api")!)
     }
 }
 
 
 class HTTPClient {
 
-    static let shared = HTTPClient()
+    static var shared = HTTPClient()
+
+    func get(from url: URL) {}
+}
+
+
+class HTTPClientSpy: HTTPClient {
+
     var requestedURL: URL?
 
-    private init() {}
+    override func get(from url: URL) {
+
+        requestedURL = url
+    }
 }
 
 
@@ -38,7 +48,8 @@ class RemoteFeedLoaderTests: XCTestCase {
     // by the remoteFeedLoader.
     func test_init_doesNotRequestDataFromURL() {
 
-        let client = HTTPClient.shared
+        let client = HTTPClientSpy()
+        HTTPClient.shared = client
         let _ = RemoteFeedLoader()
 
         XCTAssertNil(client.requestedURL)
@@ -50,12 +61,21 @@ class RemoteFeedLoaderTests: XCTestCase {
     // Or we could make HTTPClient a singleton so that it is available everywhere.
     func test_load_requestDataFromURL() {
 
-        let client = HTTPClient.shared
+        let client = HTTPClientSpy()
+        HTTPClient.shared = client
         let sut = RemoteFeedLoader()
 
         sut.load()
 
         XCTAssertNotNil(client.requestedURL)
     }
+
+    // There is no good reason that there cannot be multiple HTTPClients.
+
+    // The goal is to get rid of the singleton so that we can mock the HTTPClient.
+    // One way to do this:
+
+    // Change this singleton we can make `shared` mutable. This makes this a global state
+    // since it can be changed. This is useful because we don'
 }
 
