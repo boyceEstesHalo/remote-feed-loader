@@ -83,6 +83,25 @@ class RemoteFeedLoaderTests: XCTestCase {
     }
 
 
+    func test_load_ok200ResponseWithInvalidJSON_deliversInvalidError() {
+
+        // given
+        let (sut, client) = makeSUT()
+
+        // when
+        var capturedErrors = [RemoteFeedLoader.Error]()
+        sut.load { capturedErrors.append($0) }
+
+        let badJSON = Data("Invlaid JSON".utf8)
+        let code = 200
+        client.complete(with: code, data: badJSON)
+
+        // then
+        XCTAssertEqual(capturedErrors, [.invalidData])
+
+    }
+
+
     // MARK: Helpers
 
     private func makeSUT(url: URL = URL(string: "https://a-url.com")!) -> (RemoteFeedLoader, HTTPClientSpy) {
@@ -115,7 +134,7 @@ class RemoteFeedLoaderTests: XCTestCase {
         }
 
 
-        func complete(with statusCode: Int, index: Int = 0) {
+        func complete(with statusCode: Int, data: Data = Data(), index: Int = 0) {
 
             let response = HTTPURLResponse(
                 url: requestedURLs[index],
@@ -123,8 +142,8 @@ class RemoteFeedLoaderTests: XCTestCase {
                 httpVersion: nil,
                 headerFields: nil
             )!
-            
-            messages[index].completion(.success(response))
+
+            messages[index].completion(.success(data, response))
         }
     }
 }
