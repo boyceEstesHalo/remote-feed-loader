@@ -97,15 +97,11 @@ class RemoteFeedLoaderTests: XCTestCase {
         let (sut, client) = makeSUT()
 
         // when
-        var captured = [RemoteFeedLoader.Result]()
+        expect(sut, toCompleteWithResult: .success([])) {
 
-        let jsonData = Data("{\"items\": []}".utf8)
-        sut.load { captured.append($0) }
-
-        client.complete(with: 200, data: jsonData)
-
-        // then
-        XCTAssertEqual(captured, [.success([])])
+            let jsonData = Data("{\"items\": []}".utf8)
+            client.complete(with: 200, data: jsonData)
+        }
 
     }
 
