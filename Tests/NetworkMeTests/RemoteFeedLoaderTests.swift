@@ -110,35 +110,22 @@ class RemoteFeedLoaderTests: XCTestCase {
         // given
         let (sut, client) = makeSUT()
 
-        let item1 = FeedItem(
-            description: nil,
-            location: nil,
+        let item1 = makeItem(
+            id: UUID(),
             imageURL: URL(string: "image.com")!)
 
-        let item1JSON = [
-            "id": item1.id.uuidString,
-            "image": item1.imageURL.absoluteString
-        ]
-
-        let item2 = FeedItem(
+        let item2 = makeItem(
+            id: UUID(),
             description: "A description",
             location: "A location",
             imageURL: URL(string: "image2.com")!
         )
 
-        let item2JSON = [
-            "id": item2.id.uuidString,
-            "description": item2.description,
-            "location": item2.location,
-            "image": item2.imageURL.absoluteString
-        ]
-
-        let itemsJSON = [
-            "items": [item1JSON, item2JSON]
-        ]
+        let itemsJSON = ["items": [item1.json, item2.json]]
+        let items = [item1.model, item2.model]
 
         // when/then
-        expect(sut, toCompleteWithResult: .success([item1, item2])) {
+        expect(sut, toCompleteWithResult: .success(items)) {
 
             let json = try! JSONSerialization.data(withJSONObject: itemsJSON)
             client.complete(with: 200, data: json)
@@ -153,6 +140,25 @@ class RemoteFeedLoaderTests: XCTestCase {
         let client = HTTPClientSpy()
         let sut = RemoteFeedLoader(url: url, client: client)
         return (sut, client)
+    }
+
+
+    private func makeItem(id: UUID, description: String? = nil, location: String? = nil, imageURL: URL) -> (model: FeedItem, json: [String: Any]) {
+
+        let item = FeedItem(
+            id: id,
+            description: description,
+            location: location,
+            imageURL: imageURL)
+
+        let json = [
+            "id": id.uuidString,
+            "description": description,
+            "location": location,
+            "image": imageURL.absoluteString
+        ].compactMapValues { $0 }
+
+        return (item, json)
     }
 
 
