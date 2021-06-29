@@ -58,7 +58,7 @@ public final class RemoteFeedLoader {
             case .success(let data, let response):
 
                 if response.statusCode == 200, let root = try? JSONDecoder().decode(Root.self, from: data) {
-                    completion(.success(root.items))
+                    completion(.success(root.items.map { $0.item }))
                 } else {
                     completion(.failure(.invalidData))
                 }
@@ -70,6 +70,32 @@ public final class RemoteFeedLoader {
     }
 }
 
+
 private struct Root: Decodable {
-    let items: [FeedItem]
+
+    let items: [Item]
+}
+
+
+private struct Item: Decodable {
+
+    let id: UUID
+    let description: String?
+    let location: String?
+    let image: URL  // image name should be exactly the same as API expects.
+    // This allows us to keep the module decoupled from the FeedLoader module.
+    // This way other FeedLoaders do not conform to the same CodingKeys.
+
+
+    // Now you must map through these items to turn them in to the appropriate
+    // FeedItems that are expected.
+    var item: FeedItem {
+
+        FeedItem(
+            id: id,
+            description: description,
+            location: location,
+            imageURL: image
+        )
+    }
 }
