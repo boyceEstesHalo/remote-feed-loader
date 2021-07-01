@@ -37,31 +37,20 @@ public final class RemoteFeedLoader {
 
     public func load(completion: @escaping (Result) -> Void) {
 
-        client.get(from: url) { [weak self] result in
-            guard let self = self else { return }
+        client.get(from: url) { result in
 
             switch result {
             case .success(let data, let response):
 
-                completion(self.map(data: data, response: response))
+                completion(FeedItemsMapper.map(data: data, response: response))
 
             case .failure:
                 completion(.failure(.connectivity))
             }
         }
     }
-
-
-    private func map(data: Data, response: HTTPURLResponse) -> Result {
-
-        do {
-            let feedItems = try FeedItemsMapper.map(data, response)
-            return .success(feedItems)
-        } catch {
-            return .failure(.invalidData)
-        }
-    }
 }
+
 
 private class FeedItemsMapper {
 
@@ -97,13 +86,15 @@ private class FeedItemsMapper {
     // MARK: Properties
     static var OK_200: Int { return 200 }
 
+    static func map(data: Data, response: HTTPURLResponse) -> RemoteFeedLoader.Result {
 
-    static func map(_ data: Data, _ response: HTTPURLResponse) throws -> [FeedItem] {
+        if response.statusCode == OK_200,
+           let root = try? JSONDecoder().decode(Root.self, from: data) {
 
-        guard response.statusCode == OK_200 else {
-            throw RemoteFeedLoader.Error.invalidData
+            let feedItems = root.items.map { $0.item }
+            return .success(feedItems)
+        } else {
+            return .failure(.invalidData)
         }
-
-        return try JSONDecoder().decode(Root.self, from: data).items.map { $0.item }
     }
 }
