@@ -135,6 +135,13 @@ class RemoteFeedLoaderTests: XCTestCase {
     }
 
 
+//    func test_load_RemoteFeedLoaderDeallocatedWhileHTTPClientIsWorking_preventsRetainCycles() {
+//
+//        // given
+//        let (sut, client) = makeSUT()
+//    }
+
+
     // MARK: Helpers
 
     private func makeSUT(url: URL = URL(string: "https://a-url.com")!, file: StaticString = #filePath, line: UInt = #line) -> (RemoteFeedLoader, HTTPClientSpy) {
