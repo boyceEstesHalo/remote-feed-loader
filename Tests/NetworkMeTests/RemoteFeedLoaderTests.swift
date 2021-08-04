@@ -206,7 +206,6 @@ class RemoteFeedLoaderTests: XCTestCase {
         file: StaticString = #file, line: UInt = #line) {
 
         // when
-//        var capturedResults = [Result<[FeedItem], Error>]()
 
         // There is a problem in asserting equal on a nonequatable error
         // We want to keep the error generic for now.
