@@ -51,7 +51,7 @@ class RemoteFeedLoaderTests: XCTestCase {
         // given
         let (sut, client) = makeSUT()
 
-        expect(sut, toCompleteWithResult: .failure(RemoteFeedLoader.Error.connectivity)) {
+        expect(sut, toCompleteWithResult: failure(.connectivity)) {
 
             let clientError = NSError(domain: "Test", code: 0)
             client.complete(with: clientError)
@@ -69,7 +69,7 @@ class RemoteFeedLoaderTests: XCTestCase {
 
         samples.enumerated().forEach { index, code in
 
-            expect(sut, toCompleteWithResult: .failure(RemoteFeedLoader.Error.invalidData)) {
+            expect(sut, toCompleteWithResult: failure(.invalidData)) {
 
                 let itemsJSON = makeItemsJSON([])
                 client.complete(with: code, data: itemsJSON, index: index)
@@ -84,7 +84,7 @@ class RemoteFeedLoaderTests: XCTestCase {
         let (sut, client) = makeSUT()
 
         // when/then
-        expect(sut, toCompleteWithResult: .failure(RemoteFeedLoader.Error.invalidData)) {
+        expect(sut, toCompleteWithResult: failure(.invalidData)) {
             let badJSON = Data("Invlaid JSON".utf8)
             let code = 200
             client.complete(with: code, data: badJSON)
@@ -196,6 +196,12 @@ class RemoteFeedLoaderTests: XCTestCase {
 
         let itemsJSON = [ "items": items ]
         return try! JSONSerialization.data(withJSONObject: itemsJSON)
+    }
+
+
+    private func failure(_ error: RemoteFeedLoader.Error) -> Result<[FeedItem], Error> {
+
+        return .failure(error)
     }
 
 
