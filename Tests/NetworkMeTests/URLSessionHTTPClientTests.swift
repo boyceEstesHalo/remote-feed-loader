@@ -9,12 +9,24 @@ import Foundation
 import XCTest
 import NetworkMe
 
+protocol HTTPSession {
+
+    func dataTask(with url: URL, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) -> HTTPSessionTask
+}
+
+
+protocol HTTPSessionTask {
+
+    func resume()
+}
+
+
 class URLSessionHTTPClient {
 
-    let session: URLSession
+    let session: HTTPSession
 
 
-    init(session: URLSession) {
+    init(session: HTTPSession) {
         self.session = session
     }
 
@@ -51,7 +63,6 @@ class URLSessionHTTPClientTests: XCTestCase {
         let url = URL(string: "https://any-url.com")!
         let error = NSError(domain: "any error", code: 1)
         let session = HTTPSessionSpy()
-        let task = URLSessionDataTaskSpy()
         session.stub(url: url, error: error)
 
         let sut = URLSessionHTTPClient(session: session)
@@ -73,10 +84,10 @@ class URLSessionHTTPClientTests: XCTestCase {
 
 
     // MARK: - Helpers
-    private class HTTPSessionSpy: URLSession {
+    private class HTTPSessionSpy: HTTPSession {
 
         private struct Stub {
-            let task: URLSessionDataTask
+            let task: HTTPSessionTask
             let error: Error?
         }
         var receivedURLs = [URL]()
@@ -85,13 +96,13 @@ class URLSessionHTTPClientTests: XCTestCase {
         // A stub is used in order to set up some sort of custom logic for some other class to do during tests.
         // In this case, we want to set the data task (or error) that the dataTask call will return inside of
         // the test.
-        func stub(url: URL, task: URLSessionDataTask = FakeURLSessionDataTask(), error: Error? = nil) {
+        func stub(url: URL, task: HTTPSessionTask = FakeURLSessionDataTask(), error: Error? = nil) {
 
             stubs[url] = Stub(task: task, error: error)
         }
 
 
-        override func dataTask(with url: URL, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) -> URLSessionDataTask {
+        func dataTask(with url: URL, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) -> HTTPSessionTask {
             receivedURLs.append(url)
 
             guard let stub = stubs[url] else {
@@ -103,19 +114,19 @@ class URLSessionHTTPClientTests: XCTestCase {
     }
 
 
-    private class FakeURLSessionDataTask: URLSessionDataTask {
+    private class FakeURLSessionDataTask: HTTPSessionTask {
 
         // Not placing an overloaded resume method would cause a crash when resume was run on
         // this instance.
-        override func resume() {}
+        func resume() {}
     }
 
 
-    private class URLSessionDataTaskSpy: URLSessionDataTask {
+    private class URLSessionDataTaskSpy: HTTPSessionTask {
 
         var resumeCount = 0
 
-        override func resume() {
+        func resume() {
 
             resumeCount += 1
         }
