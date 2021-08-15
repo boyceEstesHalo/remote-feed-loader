@@ -7,6 +7,7 @@
 
 import Foundation
 import XCTest
+import NetworkMe
 
 class URLSessionHTTPClient {
 
@@ -18,9 +19,11 @@ class URLSessionHTTPClient {
     }
 
 
-    func get(from url: URL) {
-
-        session.dataTask(with: url) { _, _, _ in }.resume()
+    func get(from url: URL, completion: @escaping (HTTPClientResult) -> Void) {
+        session.dataTask(with: url) { _, _, error in
+            guard let error = error else { return }
+            completion(.failure(error))
+        }.resume()
     }
 }
 
@@ -37,31 +40,65 @@ class URLSessionHTTPClientTests: XCTestCase {
 
         let sut = URLSessionHTTPClient(session: session)
 
-        sut.get(from: url)
+        sut.get(from: url) { _ in }
 
         XCTAssertEqual(task.resumeCount, 1)
     }
 
 
+    func test_URLSessionHTTPClient_getFromURLWithError_failsOnRequest() {
+
+        let url = URL(string: "https://any-url.com")!
+        let error = NSError(domain: "any error", code: 1)
+        let session = HTTPSessionSpy()
+        let task = URLSessionDataTaskSpy()
+        session.stub(url: url, error: error)
+
+        let sut = URLSessionHTTPClient(session: session)
+
+        let exp = expectation(description: "Wait for completion")
+        sut.get(from: url) { result in
+            switch result {
+            case .failure(let receivedError as NSError):
+                XCTAssertEqual(receivedError, error)
+            default:
+                XCTFail("Expected an error")
+            }
+
+            exp.fulfill()
+        }
+
+        waitForExpectations(timeout: 1.0, handler: nil)
+    }
+
+
     // MARK: - Helpers
     private class HTTPSessionSpy: URLSession {
+
+        private struct Stub {
+            let task: URLSessionDataTask
+            let error: Error?
+        }
         var receivedURLs = [URL]()
-        private var stubs = [URL: URLSessionDataTask]()
+        private var stubs = [URL: Stub]()
 
-        // A stub is a method of inserting/replacing some functionality in a class, usually for testing purposes.
-        // In this case we want to replace the usual functionality of a simple URLSessionDataTask with our
-        // URLSessionDataTaskSpy. The stub will need to be created before the session calls this method so the url
-        // will be in place. Otherwise it will give a fatal error.
-        func stub(url: URL, task: URLSessionDataTask) {
+        // A stub is used in order to set up some sort of custom logic for some other class to do during tests.
+        // In this case, we want to set the data task (or error) that the dataTask call will return inside of
+        // the test.
+        func stub(url: URL, task: URLSessionDataTask = FakeURLSessionDataTask(), error: Error? = nil) {
 
-            stubs[url] = task
+            stubs[url] = Stub(task: task, error: error)
         }
 
 
         override func dataTask(with url: URL, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) -> URLSessionDataTask {
             receivedURLs.append(url)
 
-            return stubs[url] ?? FakeURLSessionDataTask()
+            guard let stub = stubs[url] else {
+                fatalError("Expected some stub for url, \(url)")
+            }
+            completionHandler(nil, nil, stub.error)
+            return stub.task
         }
     }
 
