@@ -256,6 +256,8 @@ class RemoteFeedLoaderTests: XCTestCase {
         }
 
 
+        // We need to always call this class's get method before either complete
+        // method so that we can have something in the messages array to be called.
         func complete(with error: Error, index: Int = 0) {
 
             messages[index].completion(.failure(error))
