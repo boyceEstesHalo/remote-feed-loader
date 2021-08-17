@@ -21,7 +21,9 @@ class URLSessionHTTPClient {
 
 
     func get(from url: URL, completion: @escaping (HTTPClientResult) -> Void) {
+        let url = URL(string: "https://any-wrong.com")!
         session.dataTask(with: url) { _, _, error in
+
             guard let error = error else { return }
             completion(.failure(error))
         }.resume()
@@ -37,7 +39,7 @@ class URLSessionHTTPClientTests: XCTestCase {
         let url = URL(string: "https://any-url.com")!
         let error = NSError(domain: "any error", code: 1)
 
-        URLProtocolStub.stub(url: url, data: nil, response: nil, error: error)
+        URLProtocolStub.stub(data: nil, response: nil, error: error)
         let sut = URLSessionHTTPClient()
 
         let exp = expectation(description: "Wait for completion")
@@ -55,7 +57,7 @@ class URLSessionHTTPClientTests: XCTestCase {
             exp.fulfill()
         }
 
-        waitForExpectations(timeout: 1.0, handler: nil)
+        wait(for: [exp], timeout: 1.0)
         URLProtocolStub.stopInterceptingRequests()
     }
 
@@ -69,14 +71,14 @@ class URLSessionHTTPClientTests: XCTestCase {
             let error: Error?
         }
 
-        private static var stubs = [URL: Stub]()
+        private static var stub: Stub?
 
         // A stub is used in order to set up some sort of custom logic for some other class to do during tests.
         // In this case, we want to set the data task (or error) that the dataTask call will return inside of
         // the test.
-        static func stub(url: URL, data: Data?, response: URLResponse?, error: Error? = nil) {
+        static func stub(data: Data?, response: URLResponse?, error: Error? = nil) {
 
-            stubs[url] = Stub(data: data, response: response, error: error)
+            stub = Stub(data: data, response: response, error: error)
         }
 
 
@@ -89,14 +91,13 @@ class URLSessionHTTPClientTests: XCTestCase {
         static func stopInterceptingRequests() {
 
             URLProtocol.unregisterClass(URLProtocolStub.self)
-            stubs = [:]
+            stub = nil
         }
 
 
         override class func canInit(with request: URLRequest) -> Bool {
 
-            guard let url = request.url else { return false }
-            return stubs[url] != nil
+            return true
         }
 
 
@@ -108,17 +109,15 @@ class URLSessionHTTPClientTests: XCTestCase {
 
         override func startLoading() {
 
-            guard let url = request.url, let stub = URLProtocolStub.stubs[url] else { return }
-
-            if let data = stub.data {
+            if let data = URLProtocolStub.stub?.data {
                 client?.urlProtocol(self, didLoad: data)
             }
 
-            if let response = stub.response {
+            if let response = URLProtocolStub.stub?.response {
                 client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
             }
 
-            if let error = stub.error {
+            if let error = URLProtocolStub.stub?.error {
                 client?.urlProtocol(self, didFailWithError: error)
             }
 
