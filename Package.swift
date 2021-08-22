@@ -24,5 +24,8 @@ let package = Package(
         .testTarget(
             name: "NetworkMeTests",
             dependencies: ["NetworkMe"]),
+        .testTarget(
+            name: "NetworkMeAPIEndToEndTests",
+            dependencies: ["NetworkMe"]),
     ]
 )
