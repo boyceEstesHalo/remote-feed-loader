@@ -10,24 +10,9 @@ import NetworkMe
 
 class NetworkMeAPIEndToEndTests: XCTestCase {
 
-    func test_feedLoader_endToEndTestServerGETResult_matchesFixedTestAccountData() {
+    func test_feedLoader_endToEndTestServerGETFeedResult_matchesFixedTestAccountData() {
 
-        let testServerURL = URL(string: "https://essentialdeveloper.com/feed-case-study/test-api/feed")!
-        let client = URLSessionHTTPClient()
-        let loader = RemoteFeedLoader(url: testServerURL, client: client)
-
-        let exp = expectation(description: "Completes loading operation")
-
-        var receivedResult: Result<[FeedItem], Error>?
-        loader.load { result in
-            receivedResult = result
-
-            exp.fulfill()
-        }
-
-        wait(for: [exp], timeout: 5)
-
-        switch receivedResult {
+        switch getFeedResult() {
         case .success(let items):
             XCTAssertEqual(items.count, 8)
 
@@ -52,6 +37,27 @@ class NetworkMeAPIEndToEndTests: XCTestCase {
 
 
     // MARK: - Helpers
+    private func getFeedResult() -> Result<[FeedItem], Error>? {
+
+        let testServerURL = URL(string: "https://essentialdeveloper.com/feed-case-study/test-api/feed")!
+        let client = URLSessionHTTPClient()
+        let loader = RemoteFeedLoader(url: testServerURL, client: client)
+
+        let exp = expectation(description: "Completes loading operation")
+
+        var receivedResult: Result<[FeedItem], Error>?
+        loader.load { result in
+            receivedResult = result
+
+            exp.fulfill()
+        }
+
+        wait(for: [exp], timeout: 5)
+
+        return receivedResult
+    }
+
+
     private func expectedItem(at index: Int) -> FeedItem {
 
         return FeedItem(
@@ -109,16 +115,7 @@ class NetworkMeAPIEndToEndTests: XCTestCase {
 
     private func imageURL(at index: Int) -> URL {
 
-        return  URL(string: [
-           "https://url-1.com",
-           "https://url-2.com",
-           "https://url-3.com",
-           "https://url-4.com",
-           "https://url-5.com",
-           "https://url-6.com",
-           "https://url-7.com",
-           "https://url-8.com"
-        ][index])!
+        return URL(string: "https://url-\(index+1).com")!
     }
 }
 
