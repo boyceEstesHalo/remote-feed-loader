@@ -7,7 +7,6 @@
 import XCTest
 import NetworkMe
 
-
 class NetworkMeAPIEndToEndTests: XCTestCase {
 
     func test_feedLoader_endToEndTestServerGETFeedResult_matchesFixedTestAccountData() {
@@ -37,11 +36,14 @@ class NetworkMeAPIEndToEndTests: XCTestCase {
 
 
     // MARK: - Helpers
-    private func getFeedResult() -> Result<[FeedItem], Error>? {
+    private func getFeedResult(file: StaticString = #file, line: UInt = #line) -> Result<[FeedItem], Error>? {
 
         let testServerURL = URL(string: "https://essentialdeveloper.com/feed-case-study/test-api/feed")!
         let client = URLSessionHTTPClient()
         let loader = RemoteFeedLoader(url: testServerURL, client: client)
+
+        trackForMemoryLeaks(client, file: file, line: line)
+        trackForMemoryLeaks(loader, file: file, line: line)
 
         let exp = expectation(description: "Completes loading operation")
 
@@ -55,6 +57,23 @@ class NetworkMeAPIEndToEndTests: XCTestCase {
         wait(for: [exp], timeout: 5)
 
         return receivedResult
+    }
+
+
+    // Frustratingly, have not figured out a good way to share this helper test method between test targets
+    // without placing it in production code.
+    func trackForMemoryLeaks(_ instance: AnyObject, file: StaticString = #file, line: UInt = #line) {
+
+        // Teardown block allows us to do something at the end of a test. We place it in
+        // this test case instead of in a tearDown method because we only want to test this
+        // when the instance is in memory.
+        addTeardownBlock { [weak instance] in
+            // We make sut weak here because we do not want to keep it in memory
+            // if it is not already in memory. If we didn't make it weak, functions that
+            // do not have retain cycles from the load method (like
+            // test_init_doesNotRequestDataFromURL) will fail this test.
+            XCTAssertNil(instance, "Instance should have been deallocated. Potential memory leak.", file: file, line: line)
+        }
     }
 
 
