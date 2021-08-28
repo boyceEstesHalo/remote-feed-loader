@@ -1,5 +1,5 @@
 # Remote Feed Loader
 
-![example workflow](https://github.com/boyceEstesHalo/remote-feed-loader/actions/workflows/ci-workflow.yaml/badge.svg)
+![CI workflow badge](https://github.com/boyceEstesHalo/remote-feed-loader/actions/workflows/ci-workflow.yml/badge.svg)
 
 A description of this package.
